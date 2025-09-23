@@ -1,4 +1,5 @@
 """Project-wide constants."""
+
 import os
 
 
