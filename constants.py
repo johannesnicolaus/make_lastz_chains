@@ -113,6 +113,16 @@ class Constants:
         CHAIN_RUN_LABEL = "chain_run"
         JOB_MEMORY_REQ = 16  # GB
         DEFAULT_QUEUE_SIZE = 1000
+        # Nextflow executors, grouped by their properties
+        ARRAY_SUPPORTING_EXECS: Tuple[str] = (
+            "awsbatch", 
+            "google-batch",
+            "lsf",
+            "pbs",
+            "pbspro",
+            "sge",
+            "slurm",
+        )
 
     class ToolNames:
         # Kent tools
@@ -132,16 +142,6 @@ class Constants:
         LASTZ = "lastz"
         # very special but necessary executable
         NEXTFLOW = "nextflow"
-        # Nextflow executors, grouped by their properties
-        ARRAY_SUPPORTING_EXECS: Tuple[str] = (
-            "awsbatch", 
-            "google-batch",
-            "lsf",
-            "pbs",
-            "pbspro",
-            "sge",
-            "slurm",
-        )
 
     class ScriptNames:
         REPEAT_FILLER = "chain_gap_filler.py"

@@ -60,7 +60,7 @@ class NextflowConfig:
             f.write(f"    time = {{ {self.time}.hour * task.attempt }}\n")
             f.write(f"    queue = '{self.queue}'\n")
             f.write(f"    cpus = {self.cpus}\n")
-            if self.job_count > 0 and self.executor in Constants.ToolNames.ARRAY_SUPPORTING_EXECS:
+            if self.job_count > 0 and self.executor in Constants.NextflowConstants.ARRAY_SUPPORTING_EXECS:
                 f.write("   array = 2000\n")
             f.write(f"    maxRetries = {self.maxRetries}\n")
             f.write(f"    errorStrategy = '{self.errorStrategy}'\n")
