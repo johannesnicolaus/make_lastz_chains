@@ -1,5 +1,7 @@
 """Project-wide constants."""
 
+from typing import Tuple
+
 import os
 
 
@@ -130,6 +132,16 @@ class Constants:
         LASTZ = "lastz"
         # very special but necessary executable
         NEXTFLOW = "nextflow"
+        # Nextflow executors, grouped by their properties
+        ARRAY_SUPPORTING_EXECS: Tuple[str] = (
+            "awsbatch", 
+            "google-batch",
+            "lsf",
+            "pbs",
+            "pbspro",
+            "sge",
+            "slurm",
+        )
 
     class ScriptNames:
         REPEAT_FILLER = "chain_gap_filler.py"
