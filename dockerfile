@@ -1,52 +1,65 @@
-FROM continuumio/miniconda3
+# Install OpenSSL 1.1 (required by Kent binaries)
+RUN wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb \
+    && dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb \
+    && rm libssl1.1_1.1.1f-1ubuntu2_amd64.deb
 
-ARG MAKE_LASTZ_CHAINS_REF=main
-ARG LASTZ_REF=master
+# Create separate conda environment with Python 3.11 for Kent tools and dependencies
+# This avoids OpenSSL conflicts with the base Python 3.13 environment
+RUN conda create -n kent python=3.11 -y \
+    && conda install -n kent -c bioconda -c conda-forge \
+       lastz \
+       twobitreader \
+       ucsc-axtchain \
+       ucsc-fatotwobit \
+       ucsc-chainmergesort \
+       ucsc-chainsort \
+       ucsc-netchainsubset \
+       ucsc-liftover \
+       ucsc-pslsortacc \
+       ucsc-chainnet \
+       ucsc-netsyntenic \
+       ucsc-chainantirepeat \
+       ucsc-chainscore \
+       ucsc-chaincleaner \
+       libiconv \
+       -y
 
-# System deps: build tools (lastz), Python, download utils (kent binaries)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl wget git \
-    python3 python3-pip python3-venv \
-    build-essential \
-    rsync unzip xz-utils bzip2 \
-    && rm -rf /var/lib/apt/lists/*
+RUN echo "/opt/conda/envs/kent/lib" > /etc/ld.so.conf.d/conda-kent.conf \
+    && ldconfig
 
+ENV LD_LIBRARY_PATH="/opt/conda/envs/kent/lib:${LD_LIBRARY_PATH}"
+
+# Add Kent conda environment to PATH (comes first for priority)
+ENV PATH="/opt/conda/envs/kent/bin:${PATH}"
+
+# Install Java 17 for Nextflow in base environment
 RUN conda install -c conda-forge openjdk=17
 
-# Pin Nextflow version and silence capsule logs during install
-#ENV NXF_VER=20.10.0 \
-#    CAPSULE_LOG=none
-
+# Install Nextflow
+ENV CAPSULE_LOG=none
 RUN curl -s https://get.nextflow.io | bash \
  && mv nextflow /usr/local/bin/ \
  && chmod 755 /usr/local/bin/nextflow
 
-RUN conda install -c bioconda lastz
-
-# && chmod -R 777 /opt/conda/share/nextflow
-    
+# Install uv
 RUN python3 -m pip install --no-cache-dir uv
 
-#RUN git clone https://github.com/hillerlab/make_lastz_chains.git \
-#    && cd make_lastz_chains \
-#    && uv venv \
-#    && . .venv/bin/activate \
-#    && uv pip install "."
-
-# 1. Create the venv in a predictable location
+# Create the venv in a predictable location
 RUN git clone https://github.com/hillerlab/make_lastz_chains.git \
     && cd make_lastz_chains \
     && uv venv /opt/venv
 
 ENV PATH="/opt/venv/bin:$PATH"
 
-# 3. Install the package (uv will detect the active venv via PATH)
+# Install the package (uv will detect the active venv via PATH)
 RUN cd make_lastz_chains && uv pip install "."
 
-# The pipeline requires many UCSC Kent binaries,
-# they can be downloaded using this script,
-# unless they are already in the $PATH:
-RUN cd make_lastz_chains && ./install_dependencies.py && conda install -c bioconda twobitreader
+# Install any remaining dependencies not in conda
+# The install_dependencies.py will skip tools already in PATH from conda
+RUN cd make_lastz_chains \
+    && ./install_dependencies.py \
+    && chmod -R 755 /make_lastz_chains/HL_kent_binaries
 
 ENV PATH="/make_lastz_chains:/opt/venv/bin:$PATH"
-ENV PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /work
